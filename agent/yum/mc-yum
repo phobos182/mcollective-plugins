@@ -1,0 +1,131 @@
+#!/usr/bin/ruby
+# Version 1.1
+require 'mcollective'
+include MCollective::RPC
+
+begin
+    options = rpcoptions do |parser, options|
+        options[:timeout] = 120
+
+        parser.define_head "Manage yum actions"
+        parser.banner = "Usage: mc-yum [options] action\n\nActions:\n   status <repository>\n   update (package)\n   check"
+    end
+rescue
+    p "#{$!}"
+end
+
+def usage()
+        puts "Manage yum actions"
+        puts "Usage: mc-yum [options] action\n\n"
+        puts "Actions:\n   status <repository>\n   update (package)\n   check"
+end
+
+if MCollective::Util.empty_filter?(options[:filter])
+    print("Do you really want to operate on services unfiltered? (y/n): ")
+    STDOUT.flush
+
+    exit unless STDIN.gets.chomp =~ /^y$/
+end
+
+yum = rpcclient("yum", {:options => options})
+
+def summarize(stats, hash)
+    puts("\n---- package agent summary ----")
+    puts("           Nodes: #{stats[:discovered]} / #{stats[:responses]}")
+    print("        status: ")
+
+    puts hash.keys.sort.map {|s| "#{hash[s]} * #{s}" }.join(", ")
+
+    printf("    Elapsed Time: %.2f s\n\n", stats[:blocktime])
+end
+
+if ARGV.length >= 1
+    action = ARGV.shift
+    target = ARGV.shift
+
+    loop { case ARGV[0]
+        when '-v':  ARGV.shift; options[:verbose] = true
+        else break
+    end }
+
+    unless action =~ /^(status|update|check)$/
+        puts("Action has to be status, update, check, or clean")
+        exit 1
+    end
+else
+    usage()
+    exit 1
+end
+
+hash = {}
+rpms = {}
+updated = {}
+
+case action
+    when "status" then
+        yum.repo(:repository => "#{target}").each do |resp|
+            response = resp[:data] 
+            if resp[:statuscode] == 0
+                if response.include?(:status)
+                    result = "#{response[:status]}"
+                    hash.include?(result) ? hash[result] += 1 : hash[result] = 1
+                    printf("%-40s status = %s\n", resp[:sender], result)
+                else
+                    printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+            end
+        end
+    end
+    when "check" then
+            yum.check.each do |resp|
+            response = resp[:data]
+            if resp[:statuscode] == 0
+                if response.include?(:packages)
+                    response[:packages].to_s.squeeze(" ").split(" ").each { |pkg|
+                        name = pkg.split("=")[0]
+                        version = pkg.split("=")[1]
+                        rpms.include?("#{name} #{version}") ? rpms["#{name} #{version}"] += 1 : rpms["#{name} #{version}"] = 1
+                    }
+                    printf("%-40s updates = %s\n", resp[:sender], response[:updates])
+                     if "#{options[:verbose]}" == "true"
+                         rpms.each { |key,val|
+                             printf("%-20s %s\n", " ", key)
+                         }
+                     end
+                else
+                    #printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+            end
+        end
+    end
+    when "update" then
+        if (target.nil? || target.empty?)
+            target = ""
+        end
+        yum.update(:package => "#{target}").each do |resp|
+            response = resp[:data]
+            if resp[:statuscode] == 0
+                if response.include?(:updated)
+                    response[:updated].to_s.squeeze(" ").split(" ").each { |pkg|
+                        name = pkg.split("=")[0]
+                        version = pkg.split("=")[1]
+                        updated.include?("#{name} #{version}") ? updated["#{name} #{version}"] += 1 : updated["#{name} #{version}"] = 1
+                    }
+                    printf("%-40s status = %s\n", resp[:sender], resp[:statusmsg])
+                     if "#{options[:verbose]}" == "true"
+                         updated.each { |key,val|
+                             printf("%-20s %s\n", " ", key)
+                         }
+                     end
+                else
+                    #printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+            end
+        end
+    end
+end
+case action
+  when "status"
+    summarize(yum.stats, hash)
+  when "check"
+    summarize(yum.stats, rpms)
+  when "update"
+    summarize(yum.stats, updated)
+end

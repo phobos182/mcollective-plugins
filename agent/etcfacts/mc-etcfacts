@@ -1,0 +1,110 @@
+#!/usr/bin/ruby
+require 'mcollective'
+include MCollective::RPC
+
+options = rpcoptions do |parser, options|
+    options[:timeout] = 5
+
+    parser.define_head "Manage facts in the /etc/facts.txt file"
+    parser.banner = "Usage: mc-etcfacts [options] (search|add|remove) <FACT> (<VALUE>)"
+end
+
+def summarize_status(stats, fact)
+    puts("\n---- fact summary ----")
+    puts("        Nodes: #{stats[:discovered]} / #{stats[:responses]}")
+    print("        Status: ")
+
+    puts fact.keys.sort.map {|s| "#{fact[s]} * #{s}" }.join(", ")
+
+    printf("    Elapsed Time: %.2f s\n\n", stats[:blocktime])
+end
+
+if ARGV.length > 1
+    action = ARGV.shift
+    fact = ARGV.shift
+    value = ARGV.shift
+
+    unless action =~ /^(search|add|remove)$/
+        puts("Action has to be search, add, or remove")
+        exit 1
+    end
+else
+    puts("Please specify a action")
+    exit 1
+end
+
+if MCollective::Util.empty_filter?(options[:filter])
+    print("Do you really want to operate on services unfiltered? (y/n): ")
+    STDOUT.flush
+
+    exit unless STDIN.gets.chomp =~ /^y$/
+end
+
+hash = {}
+facts = {}
+etcfacts = rpcclient("etc_facts", {:options => options})
+
+case action
+    when "add" then
+        etcfacts.addvalue(:fact => "#{fact}", :value => "#{value}").each do |resp|
+            response = resp[:data] 
+            if resp[:statuscode] == 0
+                if response.include?(:msg)
+                    result = "#{response[:msg]}"
+                    hash.include?(result) ? hash[result] += 1 : hash[result] = 1
+                    printf("%-40s status = %s\n", resp[:sender], result)
+                else
+                    printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+                end #if
+            end #if
+        end #etcfacts
+
+    when "remove" then
+        if (value.nil? || value.empty?)
+            etcfacts.removefact(:fact => "#{fact}", :value => "#{value}").each do |resp|
+                response = resp[:data]
+                if resp[:statuscode] == 0
+                    if response.include?(:msg)
+                        result = "#{response[:msg]}"
+                        hash.include?(result) ? hash[result] += 1 : hash[result] = 1
+                        printf("%-40s status = %s\n", resp[:sender], result)
+                    else
+                        printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+                    end #if
+                end #if
+            end #etcfacts
+        else
+            etcfacts.removevalue(:fact => "#{fact}", :value => "#{value}").each do |resp|
+                response = resp[:data]
+                puts "Response: #{response}"
+                if resp[:statuscode] == 0
+                    if response.include?(:msg)
+                        result = "#{response[:msg]}"
+                        hash.include?(result) ? hash[result] += 1 : hash[result] = 1
+                        printf("%-40s status = %s\n", resp[:sender], result)
+                    else
+                        printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+                    end #if
+                end #if
+            end #etcfacts
+        end #if
+
+    when "search" then
+        etcfacts.search(:fact => "#{fact}", :value => "#{value}").each do |resp|
+            response = resp[:data]
+            if resp[:statuscode] == 0
+                if response.include?(:msg)
+                    result = response[:msg].to_s.split(",")
+                    result.each do |value|
+                      hash.include?(value) ? hash[value] += 1 : hash[value] = 1
+                    end
+                    printf("%-40s status = %s\n", resp[:sender], result.join(","))
+                else
+                    printf("%-40s error = %s\n", resp[:sender], resp[:statusmsg])
+                end #if
+            end #if
+        end #etcfacts
+end #case
+
+# Display Results
+summarize_status(etcfacts.stats, hash)
