@@ -49,11 +49,12 @@ In this example I am removing a class from all node names that starts with <tt>u
 ========
 
 2011/04/01 - First revision
+
 2011/06/17 - Added Augeas to set a repo status to enabled / disable. Also added Shellsafe checks for variables.
 
 ## Roadmap
 ========
-* Adding a single execution framework application for yum
+Adding a single execution framework application for yum
 
 ## Contact?
 ========
