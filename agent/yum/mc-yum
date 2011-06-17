@@ -5,19 +5,13 @@ include MCollective::RPC
 
 begin
     options = rpcoptions do |parser, options|
-        options[:timeout] = 120
+        options[:timeout] = 240
 
         parser.define_head "Manage yum actions"
-        parser.banner = "Usage: mc-yum [options] action\n\nActions:\n   status <repository>\n   update (package)\n   check"
+        parser.banner = "Usage: mc-yum [options] action package\n\nActions: status, update, check, clean"
     end
 rescue
     p "#{$!}"
-end
-
-def usage()
-        puts "Manage yum actions"
-        puts "Usage: mc-yum [options] action\n\n"
-        puts "Actions:\n   status <repository>\n   update (package)\n   check"
 end
 
 if MCollective::Util.empty_filter?(options[:filter])
@@ -48,12 +42,12 @@ if ARGV.length >= 1
         else break
     end }
 
-    unless action =~ /^(status|update|check)$/
+    unless action =~ /^(status|update|check|clean)$/
         puts("Action has to be status, update, check, or clean")
         exit 1
     end
 else
-    usage()
+    puts("Please specify a action")
     exit 1
 end
 
@@ -121,11 +115,12 @@ case action
         end
     end
 end
-case action
-  when "status"
-    summarize(yum.stats, hash)
-  when "check"
-    summarize(yum.stats, rpms)
-  when "update"
-    summarize(yum.stats, updated)
+if "#{action}" == "status"
+        summarize(yum.stats, hash)
+end
+if "#{action}" == "check"
+        summarize(yum.stats, rpms)
+end
+if "#{action}" == "update"
+        summarize(yum.stats, updated)
 end

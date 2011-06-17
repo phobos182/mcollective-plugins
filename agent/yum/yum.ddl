@@ -1,25 +1,33 @@
 metadata :name        => "Yum Agent",
-        :description => "Agent to manipulate Yum",
-        :author      => "Jeremy Carroll",
-        :license     => "Apache v.2",
-        :version     => "1.0",
-        :url         => "http://www.networkedinsights.com",
-        :timeout     => 120
+         :description => "Agent to manipulate Yum",
+         :author      => "Jeremy Carroll",
+         :license     => "Apache v.2",
+         :version     => "1.1",
+         :url         => "http://www.networkedinsights.com",
+         :timeout     => 240
 
-action "repo", :description => "Check yum repository status" do
-    display :always
-
+["enable","disable","status"].each do |act|
+  action act, :description => "#{act.capitalize} a repository" do
     input :repository,
           :prompt      => "Repository",
-          :description => "The name of the yum repository to check",
+          :description => "The name of the yum repository to #{act}",
           :type        => :string,
           :validation  => '^.+$',
           :optional    => false,
           :maxlength   => 30
-
+          
+    output :name,
+           :description => "Display name of the repository",
+           :display_as  => "Name"
+           
     output :status,
-           :description => "Status of the repository (enabled|disabled)",
+           :description => "Status of the repository",
            :display_as  => "Status"
+           
+    output :packages,
+           :description => "Packages available in repository",
+           :display_as  => "Packages"
+  end
 end
 
 action "check", :description => "Check if updates are available" do
@@ -40,7 +48,16 @@ action "update", :description => "Update packages on a system" do
           :type        => :string,
           :validation  => '^.+$',
           :optional    => true,
-          :maxlength   => 30
+          :maxlength   => 90
+          
+    input :excludes,
+          :prompt      => "Excludes",
+          :description => "Packages to exclude from updating",
+          :type        => :string,
+          :validation  => '^.+$',
+          :optional    => true,
+          :maxlength   => 90
+
 
     output :updated,
            :description => "Packages that were updated",
