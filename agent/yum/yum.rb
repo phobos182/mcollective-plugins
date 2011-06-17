@@ -1,65 +1,65 @@
 module MCollective
   module Agent
     class Yum<RPC::Agent
-      metadata :name				=> "Yum Agent",
+      metadata :name        => "Yum Agent",
                :description => "Agent to manipulate Yum Updates",
-               :author		  => "Jeremy Carroll",
-               :license		  => "Apache v.2",
-               :version		  => "1.1",
-               :url				  => "http://www.networkedinsights.com",
-               :timeout		  => 240
+               :author      => "Jeremy Carroll",
+               :license     => "Apache v.2",
+               :version     => "1.1",
+               :url         => "http://www.networkedinsights.com",
+               :timeout     => 240
 
-							 ["enable","disable","status"].each do |act|
-							   action act do
-							     validate :repository, :shellsafe
-							     case act
-						       when "enable"
-						         enable()
-						       when "disable"
-						         disable()
-						       when "status"
-						         status()
-						       end
-							   end
-							 end
-							 
-							 def enable()
-							   output = augeas("#{request[:repository]}", 1)
-						     reply[:status] = output
-						   end
-						   
-						   def disable()
-						     output = augeas("#{request[:repository]}", 0)
-						     reply[:status] = output
-					     end
-					     
-					     def augeas(repository, boolean)
-					       require 'puppet'
-					       path = '/files/etc/yum.repos.d/'
-					       begin
-					         aug = ::Puppet::Type.type("augeas").new(:name => "change" , :context => "#{path}*/#{repository}", :changes => "set enabled #{boolean.to_s}").provider
+               ["enable","disable","status"].each do |act|
+                 action act do
+                   validate :repository, :shellsafe
+                   case act
+                   when "enable"
+                     enable()
+                   when "disable"
+                     disable()
+                   when "status"
+                     status()
+                   end
+                 end
+               end
+               
+               def enable()
+                 output = augeas("#{request[:repository]}", 1)
+                 reply[:status] = output
+               end
+               
+               def disable()
+                 output = augeas("#{request[:repository]}", 0)
+                 reply[:status] = output
+               end
+               
+               def augeas(repository, boolean)
+                 require 'puppet'
+                 path = '/files/etc/yum.repos.d/'
+                 begin
+                   aug = ::Puppet::Type.type("augeas").new(:name => "change" , :context => "#{path}*/#{repository}", :changes => "set enabled #{boolean.to_s}").provider
                    reply = aug.execute_changes
                    aug.close_augeas
                  rescue Exception => e
                    reply.fail e.to_s
                  end
                  return reply.to_s
-				       end
-							 def status()
-							   output = check_status("#{request[:repository]}")
-							   if ! (output[0].empty? || output[0].nil?)
-							     reply[:status] = output[0]
-						     else
-						       reply[:status] = "absent"
-					       end
-							   if ! (output[1].empty? || output[1].nil?)
-							     reply[:packages] = output[1]
-						     end
+               end
+               def status()
+                 output = check_status("#{request[:repository]}")
+                 if ! (output[0].empty? || output[0].nil?)
+                   reply[:status] = output[0]
+                 else
+                   reply[:status] = "absent"
+                 end
+                 if ! (output[1].empty? || output[1].nil?)
+                   reply[:packages] = output[1]
+                 end
                end
 
-							 def check_status(repository)
-							   packages = ''
-							   status = ''
+               def check_status(repository)
+                 packages = ''
+                 status = ''
                  shell = %x[/usr/bin/yum --color=never repolist all]
                  shell.each do |line|
                    repo = line.gsub(/\s\s+/,',')\
@@ -108,7 +108,7 @@ module MCollective
                    end
                  end #action repo
 
-               action "update" do								
+               action "update" do               
                    # Check yum status
                    yumstatus = yum_status
                    reply.fail! "Yum is currently in use" unless yumstatus.nil?
@@ -135,7 +135,7 @@ module MCollective
                        line = line.chomp.gsub(/\s\s+/,',')
                        updatepackage = line.gsub(/\s\s+/,',').split(',')
                        updatepackage.each { |pkgname|
-                         if !(pkgname.empty?)	&& !(pkgname.downcase.include? "updated:")
+                         if !(pkgname.empty?) && !(pkgname.downcase.include? "updated:")
                            version = pkgname.split(" ")[1].to_s
                            pkgname = pkgname.split(" ")[0].to_s
                            if version.to_s.include? ":"
