@@ -4,9 +4,9 @@ metadata    :name        => "Utility for /etc/facts.txt Fact File",
             :license     => "Apache License, Version 2.0",
             :version     => "1.1",
             :url         => "http://marionette-collective.org/",
-            :timeout     => 5
+            :timeout     => 3
 
-["search", "addvalue", "removevalue"].each do |act|
+["search", "add", "removevalue"].each do |act|
     action act, :description => "#{act.capitalize} a fact in /etc/facts.txt" do
         display :always
 

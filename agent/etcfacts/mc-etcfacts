@@ -3,7 +3,7 @@ require 'mcollective'
 include MCollective::RPC
 
 options = rpcoptions do |parser, options|
-    options[:timeout] = 5
+    options[:timeout] = 10
 
     parser.define_head "Manage facts in the /etc/facts.txt file"
     parser.banner = "Usage: mc-etcfacts [options] (search|add|remove) <FACT> (<VALUE>)"

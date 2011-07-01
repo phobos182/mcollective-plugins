@@ -10,16 +10,13 @@ class MCollective::Application::Etcfacts<MCollective::Application
       end
       case action
         when "remove"
-          puts "Remove"
           if ARGV.length == 1
             configuration[:action] = "removefact"
             configuration[:fact] = ARGV.shift
-            puts "#{configuration[:action]} - #{configuration[:fact]}"
           else
             configuration[:action] = "removevalue"
             configuration[:fact] = ARGV.shift
             configuration[:value] = ARGV.shift
-            puts "#{configuration[:action]} - #{configuration[:value]} #{configuration[:fact]}"
           end
         else
           if ARGV.length != 2

@@ -7,7 +7,7 @@ module MCollective
                           :license     => "Apache License, Version 2.0",
                           :version     => "1.1",
                           :url         => "http://marionette-collective.org/",
-                          :timeout     => 5
+                          :timeout     => 3
               
               # Search action:  This action will check for a specified value from a specified fact.
               # =>               if either the fact or the value is incorrect, you will be alerted.
@@ -123,7 +123,7 @@ module MCollective
                 # =>                fact  => The fact to which we're appending a value.
                 # =>                value => The actual value we're appending for the specified fact.
                 
-                action "addvalue" do
+                action "add" do
                   
                   validate :value, String
                   validate :fact, String
