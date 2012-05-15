@@ -18,6 +18,13 @@ metadata :name        => "Shell Command",
           :optional    => false,
           :maxlength   => 300
 
+    input :full,
+          :prompt      => "Full-Status Output?",
+          :description => "true / false, get full +80 character output back",
+          :type        => :string,
+          :validation  => :bool,
+          :optional    => true
+
     output :output,
            :description => "Command Output",
            :display_as  => "Output"
