@@ -1,7 +1,9 @@
 # MCollective Agents
 
 shell : MCollective agent for remote shell commands
+
 mc-yum : MCollective agent for adding / removing / checking packages using yum
+
 mc-etcfacts : MCollective agent for adding / removing / searching for facts in /etc/facts.txt
 
 ## mc-etcfacts
