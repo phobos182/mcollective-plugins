@@ -21,15 +21,21 @@ EOF
 
   def main
     $0 = "mco"
-    full_status = 'false'
     mc = rpcclient("shell")
     mc.agent_filter(configuration[:agent])
     mc.discover :verbose => true
+    # If the user sets the verbose flag, we want the full status
+    full_status = mc.verbose
 
-    full_status = 'true' if mc.verbose
     mc.execute(:cmd => ARGV.join(" "), :full => full_status).each do |node|
       output = node[:data][:stdout]
-      puts "[#{node[:sender]}] exit=#{node[:data][:exitcode]}: #{output}\n"
+      if full_status and node[:data][:exitcode] != 0
+        puts "[#{node[:sender]}] exit=#{node[:data][:exitcode]}"
+        puts "\tSTDERR: #{node[:data][:stderr]}"
+        puts "\tSTDOUT: #{node[:data][:stdout]}\n"
+      else
+        puts "[#{node[:sender]}] exit=#{node[:data][:exitcode]}: #{node[:data][:stdout]}"
+      end
     end
 
     mc.disconnect
