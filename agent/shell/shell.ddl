@@ -21,9 +21,9 @@ metadata :name        => "Shell Command",
     input :full,
           :prompt      => "Full-Status Output?",
           :description => "true / false, get full +80 character output back",
-          :type        => :string,
-          :validation  => :bool,
-          :optional    => true
+          :type        => :boolean,
+          :optional    => true,
+          :default     => true
 
     output :output,
            :description => "Command Output",
